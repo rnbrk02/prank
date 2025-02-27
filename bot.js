@@ -34,4 +34,8 @@ app.use(cors());
 
 app.listen(process.env.PORT || 8080, () => {
   console.log(`Server is running on port ${process.env.PORT || 8080}`);
+<<<<<<< HEAD
 });
+=======
+});
+>>>>>>> 099e82819b8aeb80cd43a9ad07e3ed3f9371fe84
