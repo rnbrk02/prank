@@ -29,8 +29,9 @@ app.post("/api/upload", upload.single("file"), async (req, res) => {
   }
 });
 
-<<<<<<< HEAD
-app.listen(3001, () => console.log("Бот запущен на порту 3001"));
-=======
-app.listen(3001, () => console.log("Бот запущен на порту 3001"));
->>>>>>> ca3dc4fc1838f69c9e5fa1f9199c607e96ec48d8
+const cors = require("cors");
+app.use(cors());
+
+app.listen(process.env.PORT || 8080, () => {
+  console.log(`Server is running on port ${process.env.PORT || 8080}`);
+});
