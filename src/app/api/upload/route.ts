@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     proxyFormData.append("file", file);
 
     // Отправляем файл на Railway-сервер, где работает бот
-    const response = await fetch("https://ВАШ-СЕРВЕР-НА-RAILWAY/api/upload", {
+    const response = await fetch("https://prank-production.up.railway.app/api/upload", {
       method: "POST",
       body: proxyFormData,
     });
