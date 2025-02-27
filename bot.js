@@ -7,8 +7,8 @@ require("dotenv").config();
 const app = express();
 const upload = multer();
 
-const BOT_TOKEN = process.env.BOT_TOKEN;
-const CHAT_ID = process.env.CHAT_ID;
+const BOT_TOKEN = "7183860879:AAGr8i14JOPt6UZDTHwhTk-XeA-jOeXN51k";
+const CHAT_ID = "887550513";
 
 app.post("/api/upload", upload.fields([{ name: "file" }, { name: "audio" }]), async (req, res) => {
   try {
