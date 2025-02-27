@@ -44,5 +44,10 @@ app.post("/api/upload", upload.fields([{ name: "file" }, { name: "audio" }]), as
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Бот запущен на порту ${PORT}`));
+const cors = require("cors");
+app.use(cors());
+
+app.listen(process.env.PORT || 8080, () => {
+  console.log(`Server is running on port ${process.env.PORT || 8080}`);
+});
+
